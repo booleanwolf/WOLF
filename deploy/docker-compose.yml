@@ -1,0 +1,70 @@
+# Production stack for a single Droplet. Images are built on a dev machine and loaded here
+# (see deploy/deploy.sh), because the Droplet is too small to build them itself.
+# Secrets come from /opt/wolf/.env on the server, which never leaves it.
+#
+#   Wolf        https://<WOLF_DOMAIN>/      (Caddy on 80/443 handles HTTPS and proxies to Wolf)
+# The ClutchX3D shop is not deployed yet. Wolf shows it as inactive until a shop is reachable at
+# CLUTCHX3D_API_URL; to launch it, add a clutchx3d service like the one in the root docker-compose.yml.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clutch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: clutchx3d
+    # Only reachable from the other containers.
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clutch -d clutchx3d"]
+      interval: 5s
+      retries: 10
+    # Small Droplet: keep Postgres modest.
+    command: ["postgres", "-c", "shared_buffers=48MB", "-c", "max_connections=30"]
+
+  wolf:
+    image: wolf:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      WOLF_ADMIN_USERNAME: ${WOLF_ADMIN_USERNAME:-admin}
+      WOLF_ADMIN_PASSWORD: ${WOLF_ADMIN_PASSWORD:?set WOLF_ADMIN_PASSWORD in .env}
+      WOLF_SESSION_SECRET: ${WOLF_SESSION_SECRET:?set WOLF_SESSION_SECRET in .env}
+      # Served over HTTPS by Caddy, so cookies are secure-only.
+      WOLF_COOKIE_SECURE: ${WOLF_COOKIE_SECURE:-true}
+      CLUTCHX3D_API_URL: http://clutchx3d:8080
+      CLUTCHX3D_ADMIN_KEY: ${ADMIN_API_KEY}
+      CLUTCHX3D_PUBLIC_URL: ${CLUTCHX3D_PUBLIC_URL:?set CLUTCHX3D_PUBLIC_URL in .env}
+      WOLF_DATABASE_URL: postgres://clutch:${POSTGRES_PASSWORD}@db:5432/clutchx3d
+      # Synced files are held in memory while they upload; keep this low on a 512 MB Droplet.
+      WOLF_MAX_FILE_MB: ${WOLF_MAX_FILE_MB:-20}
+      NODE_OPTIONS: --max-old-space-size=200
+    # Only Caddy talks to Wolf; it is not published on the host.
+    expose:
+      - "8081"
+    # Wolf starts without the shop and shows ClutchX3D as inactive until it runs.
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      WOLF_DOMAIN: ${WOLF_DOMAIN:?set WOLF_DOMAIN in .env, e.g. 162-243-255-182.sslip.io}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - wolf
+
+volumes:
+  dbdata:
+  caddy_data:
+  caddy_config:

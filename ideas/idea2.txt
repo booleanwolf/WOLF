@@ -1,0 +1,16 @@
+1. In the entity, the step line would be collapsable. so it shouldnt be always there. 
+2. Filtering for tasks should be hidden as well. There should be a icon button clicking it will show me the categories for filtering. 
+3. Progress should be a icon button as well. Beside the Edit maybe. clicking it will expand Progress. 
+4. The tasks part will have the whole area. 
+5. clicking a task shows things to edit. but to edit a task there will be a button. an icon button. 
+
+1. For courses add CT, Lab, Class time as well.
+2. In research, for the literature review part. there will be a paper handling section for each research project. here i will save url for papers
+3. Also for courses i can keep record of my CT marks. 
+
+1.  The dashboard will have a routine as well. This will handle concurring tasks. 
+2. Say i have tutoring at sun tue and thurs. things like this will be handled there. 
+3. Create a nice nav bar 
+4. also add a calender. This will track deadlines, occuring tasks etc. 
+
+5. The entity are thumbnail are too bigs. Make them smaller. 

@@ -1,0 +1,48 @@
+# DigitalOcean App Platform spec for Wolf.
+# Deploy:  doctl apps create --spec wolf/.do/app.yaml
+# Update:  doctl apps update <app-id> --spec wolf/.do/app.yaml
+name: wolf
+region: sgp
+services:
+  - name: wolf
+    github:
+      repo: your-github-user/ClutchX3D
+      branch: main
+      deploy_on_push: true
+    source_dir: wolf
+    dockerfile_path: wolf/Dockerfile
+    http_port: 8081
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /healthz
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: WOLF_ADMIN_USERNAME
+        value: admin
+      # Generate with: npm run hash-password -- 'your password'
+      - key: WOLF_ADMIN_PASSWORD_HASH
+        type: SECRET
+        value: "set-in-dashboard"
+      - key: WOLF_SESSION_SECRET
+        type: SECRET
+        value: "set-in-dashboard"
+      # Wolf's own data (projects, research, academics). Use a separate database, or the shop's:
+      # its tables live in their own "wolf" schema. For a managed DB, bind it like ${db.DATABASE_URL}.
+      - key: WOLF_DATABASE_URL
+        type: SECRET
+        value: "set-in-dashboard"
+      - key: WOLF_DATABASE_CA_CERT
+        value: ""
+      # Public URL of the ClutchX3D app (e.g. https://clutchx3d.com)
+      - key: CLUTCHX3D_API_URL
+        value: https://clutchx3d-xxxxx.ondigitalocean.app
+      - key: CLUTCHX3D_PUBLIC_URL
+        value: https://clutchx3d-xxxxx.ondigitalocean.app
+      # Must equal ADMIN_API_KEY in the ClutchX3D app
+      - key: CLUTCHX3D_ADMIN_KEY
+        type: SECRET
+        value: "set-in-dashboard"

@@ -1,0 +1,11 @@
+# HTTPS in front of Wolf. Caddy gets and renews the certificate itself (Let's Encrypt).
+# WOLF_DOMAIN comes from /opt/wolf/.env; switch it to a real domain later by changing that one line.
+{$WOLF_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy wolf:8081
+}
+
+# The bare IP (old bookmarks, old app installs) goes to the HTTPS address.
+http://162.243.255.182 {
+	redir https://{$WOLF_DOMAIN}{uri} permanent
+}
